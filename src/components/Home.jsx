@@ -1,4 +1,5 @@
 import React from "react";
+<<<<<<< HEAD
 import { Tv, Users, Video } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
@@ -62,6 +63,15 @@ const FeatureCard = ({ icon, title, description }) => {
       <div className="w-12 h-12 mx-auto mb-4 text-white">{icon}</div>
       <h3 className="text-xl font-semibold mb-2 text-white">{title}</h3>
       <p className="text-indigo-100">{description}</p>
+=======
+import VideoGrid from "./VideoGrid";
+
+const Home = () => {
+  return (
+    <div className="pt-24 px-8">
+      <h1 className="text-3xl font-bold mb-6">Home - Video Streaming App</h1>
+      <VideoGrid />
+>>>>>>> 413df8f (1st commit)
     </div>
   );
 };
