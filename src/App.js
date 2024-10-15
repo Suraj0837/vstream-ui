@@ -3,7 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/navbar";
 import LoginSignup from "./components/login";
 import Home from "./components/Home";
-
+//git
 const App = () => {
   return (
     <div className="App">
