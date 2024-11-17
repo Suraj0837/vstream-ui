@@ -4,7 +4,7 @@ const VideoBox = ({ video }) => {
   return (
     <div className="border border-gray-300 rounded-lg shadow-lg overflow-hidden">
       <img
-        src={video.thumbnail}
+        src={`http://localhost:8080/thumbnails/${video.videoId}`}
         alt={video.title}
         className="w-full h-48 object-cover"
       />
