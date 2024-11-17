@@ -3,64 +3,52 @@ import { Play, ThumbsUp, Eye } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
-export const videos = [
-  {
-    id: 1,
-    title: "Introduction to React Hooks",
-    description: "Learn the basics of React Hooks with practical examples",
-    thumbnail: "/api/placeholder/400/225",
-    videoUrl:
-      "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_1MB.mp4",
-    views: 1200,
-    likes: 156,
-    creator: "Tech Academy",
-    createdAt: "2024-02-15T10:00:00Z",
-  },
-  {
-    id: 2,
-    title: "Building Modern UIs with Tailwind",
-    description: "Master Tailwind CSS for modern web development",
-    thumbnail: "/api/placeholder/400/225",
-    videoUrl:
-      "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_1MB.mp4",
-    views: 850,
-    likes: 92,
-    creator: "WebDev Pro",
-    createdAt: "2024-02-14T15:30:00Z",
-  },
-  {
-    id: 3,
-    title: "Advanced JavaScript Patterns",
-    description: "Deep dive into advanced JavaScript design patterns",
-    thumbnail: "/api/placeholder/400/225",
-    videoUrl:
-      "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_1MB.mp4",
-    views: 2300,
-    likes: 245,
-    creator: "JS Ninja",
-    createdAt: "2024-02-13T09:15:00Z",
-  },
-  // Add more videos as needed
-];
+var videos;
 
 export const getVideos = () => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(videos);
-    }, 500); // Simulate network delay
+  return new Promise((resolve, reject) => {
+    fetch("http://localhost:8080/vstream-video-service/videos")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to fetch videos");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        // Map the response to match the required video structure
+        videos = data.map((video) => ({
+          id: video.videoId, 
+          title: video.title,
+          description: video.description || "No description available", // Handle if description is null
+          thumbnail: video.thumbnailUrl, // Placeholder thumbnail or update with actual logic
+          views: 0, // Assuming views will be handled later or fetched separately
+          likes: 0, // Assuming likes will be handled later or fetched separately
+          creator: "Unknown", // Assuming you have a way to fetch the creator information
+          createdAt: video.uploadDate, // Date when the video was uploaded
+        }));
+        resolve(videos);
+      })
+      .catch((error) => {
+        reject(error);
+      });
   });
 };
 
 export const getVideoById = (id) => {
   return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const video = videos.find((v) => v.id === Number(id));
-      if (video) {
-        resolve(video);
-      } else {
-        reject(new Error("Video not found"));
-      }
-    }, 500);
+    fetch(`http://localhost:8080/vstream-video-service/videos/${id}`)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Video not found");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        resolve(data); // Video found, resolve with data
+      })
+      .catch((error) => {
+        reject(error); // Video not found or error in fetching
+      });
   });
 };
 
@@ -82,7 +70,7 @@ const VideoBox = ({ video }) => {
       className="bg-white rounded-xl shadow-md overflow-hidden cursor-pointer transform transition hover:scale-105 hover:shadow-lg"
     >
       <div className="relative">
-        <img src={thumbnail} alt={title} className="w-full h-48 object-cover" />
+        <img src={`http://localhost:8080/vstream-video-service/thumbnails/${id}`} alt={title} className="w-full h-48 object-cover" />
         <div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
           <Play className="w-12 h-12 text-white" />
         </div>
