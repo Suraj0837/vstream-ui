@@ -4,7 +4,7 @@ import { Play, User, LogOut, Upload, Settings } from "lucide-react";
 
 function Navbar() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const isLoggedIn = true; // For demo purposes
+  const isLoggedIn = false; // For demo purposes
 
   return (
     <nav className="fixed top-0 left-0 right-0 bg-white/90 backdrop-blur-md border-b border-gray-200 z-50">
