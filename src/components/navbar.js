@@ -1,10 +1,29 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
-import { Play, User, LogOut, Upload, Settings } from "lucide-react";
+import { Play, User, LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 function Navbar() {
+  const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const isLoggedIn = false; // For demo purposes
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    if (token) {
+      setIsLoggedIn(true);
+    } else {
+      setIsLoggedIn(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localStorage.getItem("authToken")]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("authToken");
+    setIsLoggedIn(false);
+    setIsDropdownOpen(false);
+    navigate("/login");
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 bg-white/90 backdrop-blur-md border-b border-gray-200 z-50">
@@ -30,14 +49,14 @@ function Navbar() {
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 border border-gray-100">
                     <NavLink
                       to="/user"
-                      className=" px-4 py-2 text-gray-700 hover:bg-gray-100 flex items-center"
+                      className="px-4 py-2 text-gray-700 hover:bg-gray-100 flex items-center"
                     >
                       <User className="w-4 h-4 mr-2" />
                       Profile
                     </NavLink>
                     <button
-                      onClick={() => {}}
-                      className="w-full text-left  px-4 py-2 text-red-600 hover:bg-gray-100 flex items-center"
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100 flex items-center"
                     >
                       <LogOut className="w-4 h-4 mr-2" />
                       Logout
