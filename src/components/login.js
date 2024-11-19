@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 function LoginSignup() {
+  const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     username: "",
@@ -53,10 +55,13 @@ function LoginSignup() {
     e.preventDefault();
     if (validateForm()) {
       if (isLogin) {
+        const mockToken = `token-${Date.now()}`;
+        localStorage.setItem("authToken", mockToken);
         console.log("Login form submitted:", {
           username: formData.username,
           password: formData.password,
         });
+        navigate("/user");
       } else {
         console.log("Register form submitted:", {
           name: formData.name,

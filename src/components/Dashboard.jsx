@@ -47,13 +47,13 @@ const Dashboard = () => {
       {/* Header section */}
       <div className="max-w-7xl mx-auto  flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-800">Your Videos</h1>
-        <button
+        {/* <button
           onClick={() => setIsModalOpen(true)}
           className="flex items-center space-x-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition"
         >
           <Upload className="w-5 h-5" />
           <span>Upload Video</span>
-        </button>
+        </button> */}
       </div>
 
       {/* Video Grid */}

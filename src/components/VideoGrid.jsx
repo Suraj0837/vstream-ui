@@ -7,7 +7,7 @@ var videos;
 
 export const getVideos = () => {
   return new Promise((resolve, reject) => {
-    fetch("http://localhost:8080/vstream-video-service/videos")
+    fetch("http://10.17.35.84:8080/vstream-video-service/videos?uploadInProgress=false")
       .then((response) => {
         if (!response.ok) {
           throw new Error("Failed to fetch videos");
@@ -36,7 +36,7 @@ export const getVideos = () => {
 
 export const getVideoById = (id) => {
   return new Promise((resolve, reject) => {
-    fetch(`http://localhost:8080/vstream-video-service/videos/${id}`)
+    fetch(`http://10.17.35.84:8080/vstream-video-service/videos/${id}`)
       .then((response) => {
         if (!response.ok) {
           throw new Error("Video not found");
@@ -70,7 +70,7 @@ const VideoBox = ({ video }) => {
       className="bg-white rounded-xl shadow-md overflow-hidden cursor-pointer transform transition hover:scale-105 hover:shadow-lg"
     >
       <div className="relative">
-        <img src={`http://localhost:8080/vstream-video-service/thumbnails/${id}`} alt={title} className="w-full h-48 object-cover" />
+        <img src={`http://10.17.35.84:8080/vstream-video-service/thumbnails/${id}`} alt={title} className="w-full h-48 object-cover" />
         <div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
           <Play className="w-12 h-12 text-white" />
         </div>
