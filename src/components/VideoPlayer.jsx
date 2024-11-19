@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ThumbsUp, Eye, ArrowLeft, Loader2 } from "lucide-react";
+import Hls from "hls.js";
 import { getVideoById } from "./VideoGrid";
 
 const VideoPlayer = () => {
@@ -8,6 +9,7 @@ const VideoPlayer = () => {
   const navigate = useNavigate();
   const [video, setVideo] = useState(null);
   const [loading, setLoading] = useState(true);
+  const videoRef = useRef(null); // Reference to the video element
 
   useEffect(() => {
     const fetchVideo = async () => {
@@ -23,6 +25,33 @@ const VideoPlayer = () => {
 
     fetchVideo();
   }, [id]);
+
+  useEffect(() => {
+    if (video && video.videoUrl && videoRef.current) {
+      const videoUrl = "http://10.17.35.84:8080/videos/hls/1/4665f501-5a01-4f84-9f68-f3baee6f4319/index.m3u8"; // Hardcoded HLS URL
+      // Initialize HLS.js
+      if (Hls.isSupported()) {
+        const hls = new Hls();
+        hls.loadSource(videoUrl); // Load HLS stream
+        hls.attachMedia(videoRef.current);
+
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          console.log("HLS manifest loaded, starting playback");
+        });
+
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          console.error("HLS error:", data);
+        });
+
+        return () => {
+          hls.destroy(); // Clean up HLS instance
+        };
+      } else if (videoRef.current.canPlayType("application/vnd.apple.mpegurl")) {
+        // For Safari or native HLS support
+        videoRef.current.src = video.videoUrl;
+      }
+    }
+  }, [video]);
 
   if (loading) {
     return (
@@ -59,7 +88,7 @@ const VideoPlayer = () => {
 
       <div className="bg-black rounded-xl overflow-hidden mb-6">
         <video
-          src={video.videoUrl}
+          ref={videoRef} // Attach ref for HLS.js
           controls
           className="w-full aspect-video h-[40rem] object-cover"
           poster={video.thumbnail}
