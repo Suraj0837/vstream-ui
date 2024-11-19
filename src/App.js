@@ -5,6 +5,7 @@ import LoginSignup from "./components/login";
 import Home from "./components/Home";
 import Dashboard from "./components/Dashboard";
 import VideoPlayer from "./components/VideoPlayer";
+import UserDashboard from "./components/User"
 const App = () => {
   return (
     <div className="App">
@@ -14,6 +15,7 @@ const App = () => {
         <Route path="/login" element={<LoginSignup />}></Route>
         <Route path="/dashboard" element={<Dashboard />}></Route>
         <Route path="/video/:id" element={<VideoPlayer />} />
+        <Route path="/user" element={<UserDashboard />} />
         </Routes>
     </div>
   );

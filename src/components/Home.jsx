@@ -64,6 +64,6 @@ const FeatureCard = ({ icon, title, description }) => {
       <p className="text-indigo-100">{description}</p>
     </div>
   );
-}; 
+};
 
 export default Home;
