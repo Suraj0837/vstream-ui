@@ -23,8 +23,8 @@ export const getVideos = () => {
           description: video.description || "No description available", // Handle if description is null
           uploaderId: video.uploaderId,
           thumbnail: video.thumbnailUrl, // Placeholder thumbnail or update with actual logic
-          views: 0, // Assuming views will be handled later or fetched separately
-          likes: 0, // Assuming likes will be handled later or fetched separately
+          views: video.viewCount, // Assuming views will be handled later or fetched separately
+          likes: video.likeCount, // Assuming likes will be handled later or fetched separately
           creator: "Unknown", // Assuming you have a way to fetch the creator information
           createdAt: video.uploadDate, // Date when the video was uploaded
         }));
@@ -80,7 +80,7 @@ const VideoBox = ({ video }) => {
       <div className="p-4">
         <h3 className="font-semibold text-lg mb-2 line-clamp-2">{title}</h3>
         <div className="flex items-center text-sm text-gray-600 mb-2">
-          <span className="font-medium">{creator}</span>
+          <span className="font-medium"></span>
         </div>
         <div className="flex items-center space-x-4 text-sm text-gray-500">
           <div className="flex items-center">

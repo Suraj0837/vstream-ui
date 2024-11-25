@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { getLoginUrl, getRegisterUrl, getUsernameUrl } from "../http/UserServiceUrls"; 
 
 function LoginSignup() {
   const navigate = useNavigate();
@@ -58,7 +59,7 @@ function LoginSignup() {
       if (isLogin) {
         // Login API call
         try {
-          const response = await fetch("http://10.42.0.225:8001/vstream_gateway/login/", {
+          const response = await fetch(getLoginUrl(), {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -78,8 +79,12 @@ function LoginSignup() {
           console.log("Login successful:", data);
           alert("Login successful!");
           // Optionally store the token in localStorage/sessionStorage
-          localStorage.setItem("token", data.access_token);
-          navigate("/dashboard");
+          localStorage.setItem("authToken", data.access_token);
+          console.log("Login form submitted:", {
+            username: formData.username,
+            password: formData.password,
+          });
+          navigate("/user");
         } catch (error) {
           console.error("Login error:", error.message);
           alert("Login failed: " + error.message);
@@ -87,7 +92,7 @@ function LoginSignup() {
       } else {
         // Register API call
         try {
-          const response = await fetch("http://10.42.0.225:8001/vstream_gateway/register/", {
+          const response = await fetch(getRegisterUrl(), {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
