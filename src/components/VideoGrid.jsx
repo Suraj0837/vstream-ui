@@ -2,12 +2,13 @@ import { useNavigate } from "react-router-dom";
 import { Play, ThumbsUp, Eye } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
+import { getVideosUrl, getVideoByIdUrl } from "../http/VideoServiceUrls";
 
 var videos;
 
 export const getVideos = () => {
   return new Promise((resolve, reject) => {
-    fetch("http://10.17.35.84:8080/vstream-video-service/videos?uploadInProgress=false")
+    fetch(getVideosUrl(false))
       .then((response) => {
         if (!response.ok) {
           throw new Error("Failed to fetch videos");
@@ -17,9 +18,10 @@ export const getVideos = () => {
       .then((data) => {
         // Map the response to match the required video structure
         videos = data.map((video) => ({
-          id: video.videoId, 
+          videoId: video.videoId, 
           title: video.title,
           description: video.description || "No description available", // Handle if description is null
+          uploaderId: video.uploaderId,
           thumbnail: video.thumbnailUrl, // Placeholder thumbnail or update with actual logic
           views: 0, // Assuming views will be handled later or fetched separately
           likes: 0, // Assuming likes will be handled later or fetched separately
@@ -34,9 +36,9 @@ export const getVideos = () => {
   });
 };
 
-export const getVideoById = (id) => {
+export const getVideoById = (videoId) => {
   return new Promise((resolve, reject) => {
-    fetch(`http://10.17.35.84:8080/vstream-video-service/videos/${id}`)
+    fetch(getVideoByIdUrl(videoId))
       .then((response) => {
         if (!response.ok) {
           throw new Error("Video not found");
@@ -54,7 +56,7 @@ export const getVideoById = (id) => {
 
 const VideoBox = ({ video }) => {
   const navigate = useNavigate();
-  const { id, title, thumbnail, views, likes, creator, createdAt } = video;
+  const { videoId, title, thumbnail, views, likes, creator, createdAt } = video;
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -66,11 +68,11 @@ const VideoBox = ({ video }) => {
 
   return (
     <div
-      onClick={() => navigate(`/video/${id}`)}
+      onClick={() => navigate(`/video/${videoId}`)}
       className="bg-white rounded-xl shadow-md overflow-hidden cursor-pointer transform transition hover:scale-105 hover:shadow-lg"
     >
       <div className="relative">
-        <img src={`http://10.17.35.84:8080/vstream-video-service/thumbnails/${id}`} alt={title} className="w-full h-48 object-cover" />
+        <img src={`http://10.17.35.84:8080/vstream-video-service/thumbnails/${videoId}`} alt={title} className="w-full h-48 object-cover" />
         <div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
           <Play className="w-12 h-12 text-white" />
         </div>
@@ -127,7 +129,7 @@ const VideoGrid = () => {
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {videos.map((video) => (
-          <VideoBox key={video.id} video={video} />
+          <VideoBox key={video.videoId} video={video} />
         ))}
       </div>
     </div>

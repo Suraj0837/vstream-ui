@@ -51,24 +51,68 @@ function LoginSignup() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+  
     if (validateForm()) {
       if (isLogin) {
-        const mockToken = `token-${Date.now()}`;
-        localStorage.setItem("authToken", mockToken);
-        console.log("Login form submitted:", {
-          username: formData.username,
-          password: formData.password,
-        });
-        navigate("/user");
+        // Login API call
+        try {
+          const response = await fetch("http://10.42.0.225:8001/vstream_gateway/login/", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              username: formData.username,
+              password: formData.password,
+            }),
+          });
+  
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Login failed");
+          }
+  
+          const data = await response.json();
+          console.log("Login successful:", data);
+          alert("Login successful!");
+          // Optionally store the token in localStorage/sessionStorage
+          localStorage.setItem("token", data.access_token);
+          navigate("/dashboard");
+        } catch (error) {
+          console.error("Login error:", error.message);
+          alert("Login failed: " + error.message);
+        }
       } else {
-        console.log("Register form submitted:", {
-          name: formData.name,
-          dob: formData.dob,
-          email: formData.email,
-          password: formData.password,
-        });
+        // Register API call
+        try {
+          const response = await fetch("http://10.42.0.225:8001/vstream_gateway/register/", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              name: formData.name,
+              dob: formData.dob, // Use the formatted DOB
+              email: formData.email,
+              password: formData.password,
+            }),
+          });
+  
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Registration failed");
+          }
+  
+          const data = await response.json();
+          console.log("Registration successful:", data);
+          alert("Registration successful! Please login.");
+          setIsLogin(true); // Switch to login mode after successful signup
+        } catch (error) {
+          console.error("Registration error:", error.message);
+          alert("Registration failed: " + error.message);
+        }
       }
     }
   };

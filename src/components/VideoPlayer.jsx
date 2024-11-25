@@ -4,9 +4,11 @@ import { ThumbsUp, Eye, ArrowLeft, Loader2 } from "lucide-react";
 import Hls from "hls.js";
 import { getVideoById } from "./VideoGrid";
 import Comments from "./Comment";
+import { getHlsUrl } from "../http/VideoServiceUrls"; 
 
 const VideoPlayer = () => {
-  const { id } = useParams();
+  const { videoId } = useParams();
+  console.log("Video ID from route:", videoId);
   const navigate = useNavigate();
   const [video, setVideo] = useState({
     title: "",
@@ -24,12 +26,13 @@ const VideoPlayer = () => {
   useEffect(() => {
     const fetchVideo = async () => {
       try {
-        const data = await getVideoById(id);  // Fetch video details based on ID from URL
+        const data = await getVideoById(videoId);  // Fetch video details based on ID from URL
         console.log("Fetched video data:", data); // Debug log
         setVideo({
           ...data, // Spread the fetched data
           views: data?.views || 0, // Ensure views default to 0 if not available
           likes: data?.likes || 0, // Ensure likes default to 0 if not available
+          uploaderId: data?.uploaderId,
         });
       } catch (error) {
         console.error("Error fetching video:", error);
@@ -38,11 +41,11 @@ const VideoPlayer = () => {
       }
     };
     fetchVideo();
-  }, [id]);
+  }, [videoId]);
   
   useEffect(() => {
-    if (video && video.videoUrl && videoRef.current) {
-      const videoUrl = `http://10.17.35.84:8080/vstream-video-service/videos/hls/1/${id}/index.m3u8`; // Construct HLS URL
+    if (video && video.videoUrl && video.uploaderId && videoRef.current) {
+      const videoUrl = getHlsUrl(video.uploaderId, videoId); 
       console.log(videoUrl);
   
       // Initialize HLS.js
@@ -147,7 +150,7 @@ const VideoPlayer = () => {
           <h3 className="font-semibold mb-2">{video.creator}</h3>
           <p className="text-gray-700">{video.description}</p>
         </div>
-        <Comments videoId={video.id} />
+        <Comments videoId={video.videoId} />
       </div>
     </div>
   );

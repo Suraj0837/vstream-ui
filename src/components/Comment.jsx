@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Trash2, Edit2, X } from "lucide-react";
+import { getAddCommentUrl, getCommentsUrl } from "../http/VideoServiceUrls";
 
 const Comments = ({ videoId }) => {
   const [comments, setComments] = useState([]);
@@ -8,20 +9,53 @@ const Comments = ({ videoId }) => {
   const [editText, setEditText] = useState("");
   const [showAlert, setShowAlert] = useState(false);
 
-  const addComment = () => {
-    if (!newComment.trim()) return;
-
-    const comment = {
-      id: Date.now(),
-      text: newComment,
-      author: "You",
-      timestamp: new Date(),
-      likes: 0,
-      isLiked: false,
+  // Fetch comments for the video when the page loads
+  useEffect(() => {
+    const fetchComments = async () => {
+      try {
+        const response = await fetch(getCommentsUrl(videoId)); // API to get comments
+        if (response.ok) {
+          const fetchedComments = await response.json();
+          setComments(fetchedComments);
+        } else {
+          console.error("Failed to fetch comments");
+        }
+      } catch (error) {
+        console.error("Error fetching comments:", error);
+      }
     };
 
-    setComments([comment, ...comments]);
-    setNewComment("");
+    fetchComments();
+  }, [videoId]);
+
+  const addComment = async () => {
+    if (!newComment.trim()) return;
+
+    const commentDTO = {
+      videoId: videoId, // Pass the video ID as a UUID
+      userId: "4f1b0f88-9f3c-4f6f-89fa-0d6993c59a58", // Replace with the logged-in user's ID (as UUID)
+      content: newComment, // Use "content" to align with the backend's DTO
+    };
+
+    try {
+      const response = await fetch(getAddCommentUrl(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(commentDTO),
+      });
+
+      if (response.ok) {
+        const savedComment = await response.json();
+        setComments([savedComment, ...comments]); // Add new comment to the list
+        setNewComment(""); // Clear the input field
+      } else {
+        console.error("Failed to post comment");
+      }
+    } catch (error) {
+      console.error("Error posting comment:", error);
+    }
   };
 
   const deleteComment = (id) => {
@@ -80,27 +114,25 @@ const Comments = ({ videoId }) => {
       <div className="space-y-4">
         {comments.map((comment) => (
           <div
-            key={comment.id}
+            key={comment.commentId}
             className="bg-white rounded-lg shadow-md p-4 border border-gray-100"
           >
             <div className="flex items-start justify-between">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-semibold">
-                  {comment.author[0]}
+                  {comment.userId.slice(0, 1)} {/* Display user's initial */}
                 </div>
                 <div>
-                  <div className="font-semibold text-gray-900">
-                    {comment.author}
-                  </div>
+                  <div className="font-semibold text-gray-900">{comment.userId}</div>
                   <div className="text-sm text-gray-500">
-                    {new Date(comment.timestamp).toLocaleDateString()}
+                    {new Date(comment.createdAt).toLocaleDateString()} {/* Format timestamp */}
                   </div>
                 </div>
               </div>
 
               <div className="flex items-center space-x-2">
                 <button
-                  onClick={() => toggleLike(comment.id)}
+                  onClick={() => toggleLike(comment.commentId)}
                   className={`px-3 py-1 rounded-full text-sm flex items-center space-x-1 ${
                     comment.isLiked
                       ? "text-indigo-600 bg-indigo-50"
@@ -112,15 +144,15 @@ const Comments = ({ videoId }) => {
                 </button>
                 <button
                   onClick={() => {
-                    setEditingId(comment.id);
-                    setEditText(comment.text);
+                    setEditingId(comment.commentId);
+                    setEditText(comment.content);
                   }}
                   className="p-1 text-gray-500 hover:bg-gray-100 rounded"
                 >
                   <Edit2 className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => deleteComment(comment.id)}
+                  onClick={() => deleteComment(comment.commentId)}
                   className="p-1 text-red-500 hover:bg-red-50 rounded"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -128,7 +160,7 @@ const Comments = ({ videoId }) => {
               </div>
             </div>
 
-            {editingId === comment.id ? (
+            {editingId === comment.commentId ? (
               <div className="mt-3">
                 <textarea
                   value={editText}
@@ -152,7 +184,7 @@ const Comments = ({ videoId }) => {
                 </div>
               </div>
             ) : (
-              <p className="mt-2 text-gray-700">{comment.text}</p>
+              <p className="mt-2 text-gray-700">{comment.content}</p>
             )}
           </div>
         ))}
