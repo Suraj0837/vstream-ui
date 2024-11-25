@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
+import { jwtDecode } from "jwt-decode";
 import { Trash2, Edit2, X } from "lucide-react";
-import { getAddCommentUrl, getCommentsUrl } from "../http/VideoServiceUrls";
+import { getAddCommentUrl, getCommentsUrl, getCommentByIdUrl } from "../http/VideoServiceUrls";
+import { getUsernameUrl } from "../http/UserServiceUrls"; 
 
 const Comments = ({ videoId }) => {
   const [comments, setComments] = useState([]);
@@ -8,6 +10,28 @@ const Comments = ({ videoId }) => {
   const [editingId, setEditingId] = useState(null);
   const [editText, setEditText] = useState("");
   const [showAlert, setShowAlert] = useState(false);
+  const [usernames, setUsernames] = useState({}); // Store usernames by userId
+  const [loading, setLoading] = useState(true);
+
+  const fetchUserName = async (userId) => {
+    try {
+      const response = await fetch(getUsernameUrl(userId), {
+        method: "GET",
+      });
+      if (response.ok) {
+        const userData = await response.json();
+        setUsernames((prevUsernames) => ({
+          ...prevUsernames,
+          [userId]: userData.username, // Save username by userId
+        }));
+      } else {
+        console.error("Failed to fetch username");
+      }
+    } catch (error) {
+      console.error("Error fetching username:", error);
+    }
+  };
+
 
   // Fetch comments for the video when the page loads
   useEffect(() => {
@@ -17,23 +41,44 @@ const Comments = ({ videoId }) => {
         if (response.ok) {
           const fetchedComments = await response.json();
           setComments(fetchedComments);
+
+          // Fetch usernames for all the userIds in the comments
+          fetchedComments.forEach((comment) => {
+            if (!usernames[comment.userId]) {
+              fetchUserName(comment.userId); // Fetch username if not already fetched
+            }
+          });
         } else {
           console.error("Failed to fetch comments");
         }
       } catch (error) {
         console.error("Error fetching comments:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchComments();
   }, [videoId]);
 
+
   const addComment = async () => {
     if (!newComment.trim()) return;
 
+    const authToken = localStorage.getItem("authToken");
+    let userId;
+    try {
+      // Decode the JWT to extract user information
+      const decodedToken = jwtDecode(authToken);
+      userId = decodedToken.user_id; // Replace with the correct key for uploaderId
+    } catch (error) {
+      console.error("Failed to decode authToken:", error);
+      return;
+    }
+
     const commentDTO = {
       videoId: videoId, // Pass the video ID as a UUID
-      userId: "4f1b0f88-9f3c-4f6f-89fa-0d6993c59a58", // Replace with the logged-in user's ID (as UUID)
+      userId: userId, // Replace with the logged-in user's ID (as UUID)
       content: newComment, // Use "content" to align with the backend's DTO
     };
 
@@ -58,16 +103,88 @@ const Comments = ({ videoId }) => {
     }
   };
 
-  const deleteComment = (id) => {
-    setComments(comments.filter((comment) => comment.id !== id));
-    setShowAlert(true);
-    setTimeout(() => setShowAlert(false), 3000);
+  const editComment = async () => {
+    if (!editText.trim()) {
+      console.warn("Content cannot be empty.");
+      return;
+    }
+  
+    const authToken = localStorage.getItem("authToken");
+    let userId;
+    try {
+      // Decode the JWT to extract user information
+      const decodedToken = jwtDecode(authToken);
+      userId = decodedToken.user_id; // Replace with the correct key for uploaderId
+    } catch (error) {
+      console.error("Failed to decode authToken:", error);
+      return;
+    }
+  
+    try {
+      const response = await fetch(getCommentByIdUrl(editingId), {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`, // Include the token for secured endpoints
+        },
+        body: editText, // The backend expects just the content string
+      });
+  
+      if (response.ok) {
+        const updatedComment = await response.json();
+        setComments((prevComments) =>
+          prevComments.map((comment) =>
+            comment.id === editingId ? updatedComment : editText
+          )
+        ); // Update the specific comment in the list
+        console.log("Comment updated successfully.");
+        window.location.reload();
+      } else if (response.status === 404) {
+        console.error("Comment not found.");
+      } else {
+        console.error("Failed to update comment.");
+      }
+    } catch (error) {
+      console.error("Error updating comment:", error);
+    }
+  };
+  
+
+  const deleteComment = async (commentId) => {
+    const authToken = localStorage.getItem("authToken");
+  
+    try {
+      const response = await fetch(getCommentByIdUrl(commentId),
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${authToken}`, // Include the token for secured endpoints
+          },
+        }
+      );
+  
+      if (response.ok) {
+        setComments((prevComments) =>
+          prevComments.filter((comment) => comment.id !== commentId)
+        ); // Remove the comment from the list
+        setShowAlert(true); // Show success alert
+        setTimeout(() => setShowAlert(false), 3000); // Hide alert after 3 seconds
+        console.log(`Comment with ID ${commentId} deleted successfully.`);
+        window.location.reload();
+      } else if (response.status === 404) {
+        console.error(`Comment with ID ${commentId} not found.`);
+      } else {
+        console.error(`Failed to delete comment with ID ${commentId}.`);
+      }
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+    }
   };
 
   const saveEdit = () => {
     setComments(
       comments.map((comment) =>
-        comment.id === editingId ? { ...comment, text: editText } : comment
+        editComment()
       )
     );
     setEditingId(null);
@@ -140,7 +257,7 @@ const Comments = ({ videoId }) => {
                   }`}
                 >
                   <span>{comment.likes}</span>
-                  <span>likes</span>
+                  {/* <span>likes</span> */}
                 </button>
                 <button
                   onClick={() => {

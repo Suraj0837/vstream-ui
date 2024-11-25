@@ -6,7 +6,10 @@ import Home from "./components/Home";
 import Dashboard from "./components/Dashboard";
 import VideoPlayer from "./components/VideoPlayer";
 import AdminPage from "./components/AdminPage";
-import GraphPage from "./components/GraphPage";
+import VideoUploadTrend from "./components/VideoUploadTrend";
+import UploadCountByUser from "./components/UploadCountByUser";
+import ViewsVsLikes from "./components/ViewsVsLikes";
+import LikeCountDist from "./components/LikeCountDist";
 import AuditPage from "./components/AuditPage"
 import UserDashboard from "./components/User";
 const App = () => {
@@ -20,7 +23,10 @@ const App = () => {
         <Route path="/video/:videoId" element={<VideoPlayer />} />
         <Route path="/user" element={<UserDashboard />} />
         <Route path="/admin" element={<AdminPage />} />
-        <Route path="/admin/graph" element={<GraphPage />} />
+        <Route path="/admin/videoUploadTrend" element={<VideoUploadTrend />} />
+        <Route path="/admin/viewsVsLikes" element={<ViewsVsLikes />} />
+        <Route path="/admin/uploadCountByUser" element={<UploadCountByUser />} />
+        <Route path="/admin/likeCountDist" element={<LikeCountDist />} />
         <Route path="/admin/audit" element={<AuditPage />} />
         </Routes>
     </div>

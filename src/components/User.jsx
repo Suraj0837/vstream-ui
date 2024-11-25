@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { jwtDecode } from "jwt-decode";
 import {
   Upload,
   Trash2,
@@ -11,13 +12,61 @@ import {
   ThumbsUp,
   Clock,
 } from "lucide-react";
-import { getVideos } from "./VideoGrid";
+import { getUploadVideoUrl } from "../http/VideoServiceUrls";
 import { useNavigate } from "react-router-dom";
+import { getVideosUrlUserId, getVideoByIdUrl} from "../http/VideoServiceUrls";
+
+export const getVideos = () => {
+  return new Promise((resolve, reject) => {
+    const authToken = localStorage.getItem("authToken");
+    let uploaderId;
+    var videos;
+
+    try {
+      // Decode the JWT to extract user information
+      const decodedToken = jwtDecode(authToken);
+      uploaderId = decodedToken.user_id; // Replace with the correct key for uploaderId
+    } catch (error) {
+      console.error("Failed to decode authToken:", error);
+      return;
+    }
+    fetch(getVideosUrlUserId(false, uploaderId))
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to fetch videos");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        // Map the response to match the required video structure
+        videos = data.map((video) => ({
+          videoId: video.videoId, 
+          title: video.title,
+          description: video.description || "No description available", // Handle if description is null
+          uploaderId: video.uploaderId,
+          thumbnail: video.thumbnailUrl, // Placeholder thumbnail or update with actual logic
+          views: 0, // Assuming views will be handled later or fetched separately
+          likes: 0, // Assuming likes will be handled later or fetched separately
+          creator: "Unknown", // Assuming you have a way to fetch the creator information
+          createdAt: video.uploadDate, // Date when the video was uploaded
+        }));
+        resolve(videos);
+      })
+      .catch((error) => {
+        reject(error);
+      });
+  });
+};
+
+
 const UserPage = () => {
+  
+  const authToken = localStorage.getItem("authToken");
+  const decodedToken = jwtDecode(authToken);
   const [userInfo, setUserInfo] = useState({
-    name: "John Doe",
-    email: "john@example.com",
-    bio: "Video creator and editor",
+    name: decodedToken.full_name,
+    email: decodedToken.username,
+    // bio: "Video creator and editor",
   });
   const navigate = useNavigate();
   const [videos, setVideos] = useState([]);
@@ -33,8 +82,13 @@ const UserPage = () => {
 
   useEffect(() => {
     const fetchVideos = async () => {
-      const data = await getVideos();
-      setVideos(data);
+      try {
+        const data = await getVideos();
+        setVideos(Array.isArray(data) ? data : []); // Set videos or fallback to empty array
+      } catch (error) {
+        console.error("Error fetching videos:", error);
+        setVideos([]); // Fallback to an empty array in case of an error
+      }
     };
     fetchVideos();
   }, []);
@@ -60,33 +114,145 @@ const UserPage = () => {
     );
   };
 
-  const handleUpload = async (e) => {
+  const handleUpdateUser = async (e) => {
     e.preventDefault();
-    const newVideo = {
-      id: Date.now(),
-      title: uploadData.title,
-      description: uploadData.description,
-      thumbnail: uploadData.thumbnail
-        ? URL.createObjectURL(uploadData.thumbnail)
-        : "/api/placeholder/400/225",
-      videoUrl: uploadData.video ? URL.createObjectURL(uploadData.video) : "",
-      views: 0,
-      likes: 0,
-      creator: userInfo.name,
-      createdAt: new Date().toISOString(),
-      duration: 180, // Default duration in seconds
-    };
-    setVideos([newVideo, ...videos]);
-    setIsModalOpen(false);
-    setUploadData({
-      title: "",
-      description: "",
-      video: null,
-      thumbnail: null,
-    });
+
+    // Get the authToken from localStorage
+    const authToken = localStorage.getItem("authToken");
+    let uploaderId;
+
+    try {
+      // Decode the JWT to extract user information
+      const decodedToken = jwtDecode(authToken);
+      uploaderId = decodedToken.user_id; // Replace with the correct key for uploaderId
+    } catch (error) {
+      console.error("Failed to decode authToken:", error);
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("title", uploadData.title);
+    formData.append("description", uploadData.description);
+    formData.append("videoFile", uploadData.video); // Attach the video file
+    formData.append("thumbnailFile", uploadData.thumbnail); // Attach the thumbnail file
+    formData.append("uploaderId", uploaderId); // Include uploaderId
+
+    try {
+      const response = await fetch(getUploadVideoUrl(), {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${authToken}`, // Include authToken in headers
+        },
+        body: formData,
+      });
+
+      
+
+      if (response.ok) {
+        let savedVideo = {};
+        try {
+          // Attempt to parse the JSON response
+          savedVideo = await response.json();
+        } catch (parseError) {
+          console.warn("Response body is empty or invalid JSON:", parseError);
+        }
+        setIsModalOpen(false);
+        setUploadData({
+          title: "",
+          description: "",
+          video: null,
+          thumbnail: null,
+        });
+      } else {
+        console.error("Failed to upload video");
+      }
+    } catch (error) {
+      console.error("Error uploading video:", error);
+    }
   };
 
-  const handleDeleteVideo = (videoId) => {
+  const handleUpload = async (e) => {
+    e.preventDefault();
+
+    // Get the authToken from localStorage
+    const authToken = localStorage.getItem("authToken");
+    let uploaderId;
+
+    try {
+      // Decode the JWT to extract user information
+      const decodedToken = jwtDecode(authToken);
+      uploaderId = decodedToken.user_id; // Replace with the correct key for uploaderId
+    } catch (error) {
+      console.error("Failed to decode authToken:", error);
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("title", uploadData.title);
+    formData.append("description", uploadData.description);
+    formData.append("videoFile", uploadData.video); // Attach the video file
+    formData.append("thumbnailFile", uploadData.thumbnail); // Attach the thumbnail file
+    formData.append("uploaderId", uploaderId); // Include uploaderId
+
+    try {
+      const response = await fetch(getUploadVideoUrl(), {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${authToken}`, // Include authToken in headers
+        },
+        body: formData,
+      });
+
+      
+
+      if (response.ok) {
+        let savedVideo = {};
+        try {
+          // Attempt to parse the JSON response
+          savedVideo = await response.json();
+        } catch (parseError) {
+          console.warn("Response body is empty or invalid JSON:", parseError);
+        }
+        setIsModalOpen(false);
+        setUploadData({
+          title: "",
+          description: "",
+          video: null,
+          thumbnail: null,
+        });
+      } else {
+        console.error("Failed to upload video");
+      }
+    } catch (error) {
+      console.error("Error uploading video:", error);
+    }
+  };
+  
+  
+
+  const handleDeleteVideo = async (videoId) => {
+    // e.preventDefault();
+
+    // Get the authToken from localStorage
+    const authToken = localStorage.getItem("authToken");
+
+    try {
+      const response = await fetch(getVideoByIdUrl(videoId), {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${authToken}`, // Include authToken in headers
+        }
+      });
+
+      if (response.ok) {
+        console.log("video deleted successfuly")
+        window.location.reload();
+      } else {
+        console.error("Failed to upload video");
+      }
+    } catch (error) {
+      console.error("Error uploading video:", error);
+    }
     setVideos(videos.filter((video) => video.id !== videoId));
   };
 
@@ -146,18 +312,18 @@ const UserPage = () => {
             )}
           </div>
           <div className="flex space-x-2">
-            {!isEditingProfile ? (
-              <button
-                onClick={() => setIsEditingProfile(true)}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
-              >
-                Edit Profile
-              </button>
+            {/* {!isEditingProfile ? (
+              // <button
+              //   onClick={() => setIsEditingProfile(true)}
+              //   className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+              // >
+                
+              // </button>
             ) : (
               <>
                 <button
                   onClick={() => {
-                    setUserInfo(userInfo);
+                    handleUpdateUser(userInfo);
                     setIsEditingProfile(false);
                   }}
                   className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
@@ -171,7 +337,7 @@ const UserPage = () => {
                   Cancel
                 </button>
               </>
-            )}
+            )} */}
           </div>
         </div>
       </div>
@@ -191,12 +357,12 @@ const UserPage = () => {
         {videos.map((video) => (
           <div
             key={video.id}
-            onClick={() => navigate(`/video/${video.id}`)}
+            onClick={() => navigate(`/video/${video.videoId}`)}
             className="group bg-white rounded-xl shadow-md overflow-hidden cursor-pointer"
           >
             <div className="relative aspect-video">
               <img
-                src={video.thumbnail}
+                src={`http://10.17.35.84:8080/vstream-video-service/thumbnails/${video.videoId}`}
                 alt={video.title}
                 className="w-full h-full object-cover"
               />
@@ -223,7 +389,7 @@ const UserPage = () => {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleDeleteVideo(video.id);
+                    handleDeleteVideo(video.videoId);
                   }}
                   className="p-2 bg-white rounded-full shadow hover:bg-gray-100 transition"
                 >
@@ -256,77 +422,44 @@ const UserPage = () => {
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl w-full max-w-2xl m-4">
-            <div className="flex justify-between items-center p-6 border-b">
-              <h2 className="text-xl font-semibold">Upload New Video</h2>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-xl w-full max-w-2xl m-4">
+          <div className="flex justify-between items-center p-6 border-b">
+            <h2 className="text-xl font-semibold">Upload New Video</h2>
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
 
-            <form onSubmit={handleUpload} className="p-6 space-y-6">
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Video File
-                </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 hover:border-indigo-500 transition">
-                  <div className="flex flex-col items-center">
-                    <Film className="w-12 h-12 text-gray-400 mb-4" />
-                    <div className="text-center">
-                      {uploadData.video ? (
-                        <p className="text-sm text-gray-600">
-                          Selected: {uploadData.video.name}
-                        </p>
-                      ) : (
-                        <label className="cursor-pointer">
-                          <span className="text-indigo-600 hover:text-indigo-700">
-                            Browse files
-                          </span>
-                          <input
-                            type="file"
-                            accept="video/*"
-                            className="hidden"
-                            onChange={(e) =>
-                              setUploadData({
-                                ...uploadData,
-                                video: e.target.files[0],
-                              })
-                            }
-                          />
-                        </label>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Thumbnail
-                </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-indigo-500 transition">
-                  <div className="flex flex-col items-center">
-                    {uploadData.thumbnail ? (
+          <form onSubmit={handleUpload} className="p-6 space-y-6">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Video File
+              </label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 hover:border-indigo-500 transition">
+                <div className="flex flex-col items-center">
+                  <Film className="w-12 h-12 text-gray-400 mb-4" />
+                  <div className="text-center">
+                    {uploadData.video ? (
                       <p className="text-sm text-gray-600">
-                        Selected: {uploadData.thumbnail.name}
+                        Selected: {uploadData.video.name}
                       </p>
                     ) : (
                       <label className="cursor-pointer">
                         <span className="text-indigo-600 hover:text-indigo-700">
-                          Select thumbnail
+                          Browse files
                         </span>
                         <input
                           type="file"
-                          accept="image/*"
+                          accept="video/*"
                           className="hidden"
                           onChange={(e) =>
                             setUploadData({
                               ...uploadData,
-                              thumbnail: e.target.files[0],
+                              video: e.target.files[0],
                             })
                           }
                         />
@@ -335,59 +468,92 @@ const UserPage = () => {
                   </div>
                 </div>
               </div>
+            </div>
 
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Title
-                </label>
-                <input
-                  type="text"
-                  value={uploadData.title}
-                  onChange={(e) =>
-                    setUploadData({ ...uploadData, title: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  required
-                />
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Thumbnail
+              </label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-indigo-500 transition">
+                <div className="flex flex-col items-center">
+                  {uploadData.thumbnail ? (
+                    <p className="text-sm text-gray-600">
+                      Selected: {uploadData.thumbnail.name}
+                    </p>
+                  ) : (
+                    <label className="cursor-pointer">
+                      <span className="text-indigo-600 hover:text-indigo-700">
+                        Select thumbnail
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) =>
+                          setUploadData({
+                            ...uploadData,
+                            thumbnail: e.target.files[0],
+                          })
+                        }
+                      />
+                    </label>
+                  )}
+                </div>
               </div>
+            </div>
 
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Description
-                </label>
-                <textarea
-                  value={uploadData.description}
-                  onChange={(e) =>
-                    setUploadData({
-                      ...uploadData,
-                      description: e.target.value,
-                    })
-                  }
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  rows="4"
-                />
-              </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Title
+              </label>
+              <input
+                type="text"
+                value={uploadData.title}
+                onChange={(e) =>
+                  setUploadData({ ...uploadData, title: e.target.value })
+                }
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                required
+              />
+            </div>
 
-              <div className="flex justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
-                  disabled={!uploadData.video || !uploadData.title}
-                >
-                  Upload
-                </button>
-              </div>
-            </form>
-          </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Description
+              </label>
+              <textarea
+                value={uploadData.description}
+                onChange={(e) =>
+                  setUploadData({
+                    ...uploadData,
+                    description: e.target.value,
+                  })
+                }
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                rows="4"
+              />
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                disabled={!uploadData.video || !uploadData.title}
+              >
+                Upload
+              </button>
+            </div>
+          </form>
         </div>
-      )}
+      </div>
+    )}
 
       {editingVideo && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">

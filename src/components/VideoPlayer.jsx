@@ -4,9 +4,11 @@ import { ThumbsUp, Eye, ArrowLeft, Loader2 } from "lucide-react";
 import Hls from "hls.js";
 import { getVideoById } from "./VideoGrid";
 import Comments from "./Comment";
-import { getHlsUrl } from "../http/VideoServiceUrls"; 
+import { getHlsUrl, getLikeVideoUrl, getViewVideoUrl } from "../http/VideoServiceUrls"; 
+import { jwtDecode } from "jwt-decode";
 
 const VideoPlayer = () => {
+  const isFirstRender = useRef(true); 
   const { videoId } = useParams();
   console.log("Video ID from route:", videoId);
   const navigate = useNavigate();
@@ -23,7 +25,31 @@ const VideoPlayer = () => {
   const [loading, setLoading] = useState(true);
   const videoRef = useRef(null); // Reference to the video element
 
+  const handleViewCount = async () => {
+    // const { videoId } = useParams();
+    try {
+      const response = await fetch(getViewVideoUrl(videoId), {
+        method: "PUT",
+        headers: { // Include token in Authorization header
+          "Content-Type": "application/json",
+        },
+      });
+  
+      if (response.ok) {
+        console.log(`Video view count updated successfully`);
+      } else {
+        console.error("Failed to update view status. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error updating view status:", error);
+    }
+  };
+
   useEffect(() => {
+    if (isFirstRender.current) {
+      handleViewCount(); // Trigger view count update on initial render
+      isFirstRender.current = false; // Mark that the first render has occurred
+    }
     const fetchVideo = async () => {
       try {
         const data = await getVideoById(videoId);  // Fetch video details based on ID from URL
@@ -72,13 +98,46 @@ const VideoPlayer = () => {
     }
   }, [video]);
 
+  
+
+
   // Handle the like button click
-  const handleLike = () => {
-    setVideo((prevVideo) => ({
-      ...prevVideo,
-      isLiked: !prevVideo.isLiked,
-      likes: prevVideo.isLiked ? prevVideo.likes - 1 : prevVideo.likes + 1,
-    }));
+  const handleLike = async () => {
+    // const { videoId } = useParams();
+    const authToken = localStorage.getItem("authToken");
+    let userId;
+  
+    try {
+      // Decode the JWT to extract the user ID
+      const decodedToken = jwtDecode(authToken);
+      userId = decodedToken.user_id; // Replace with the correct key for user ID in the token
+    } catch (error) {
+      console.error("Failed to decode authToken:", error);
+      return;
+    }
+  
+    try {
+      const response = await fetch(getLikeVideoUrl(videoId, userId), {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${authToken}`, // Include token in Authorization header
+          "Content-Type": "application/json",
+        },
+      });
+  
+      if (response.ok) {
+        setVideo((prevVideo) => ({
+          ...prevVideo,
+          isLiked: !prevVideo.isLiked,
+          likes: prevVideo.isLiked ? prevVideo.likes - 1 : prevVideo.likes + 1,
+        }));
+        console.log(`Video like status updated successfully for user ID: ${userId}`);
+      } else {
+        console.error("Failed to update like status. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error updating like status:", error);
+    }
   };
 
   if (loading) {
@@ -131,7 +190,7 @@ const VideoPlayer = () => {
           <div className="flex items-center space-x-4">
             <div className="flex items-center text-gray-600">
               <Eye className="w-5 h-5 mr-1" />
-              {video?.views ? video.views.toLocaleString() : "0"} views
+              {video?.viewCount ? video.viewCount.toLocaleString() : "0"} views
             </div>
             <button
               onClick={handleLike}
@@ -142,7 +201,7 @@ const VideoPlayer = () => {
               <ThumbsUp
                 className={`w-5 h-5 mr-1 ${video?.isLiked ? "fill-current" : ""}`}
               />
-              {video?.likes ? video.likes.toLocaleString() : "0"} likes
+              {video?.likeCount ? video.likeCount.toLocaleString() : "0"} likes
             </button>
           </div>
         </div>
