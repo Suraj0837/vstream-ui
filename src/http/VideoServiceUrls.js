@@ -1,6 +1,6 @@
 // urls.js
 
-const BASE_URL = "http://10.17.35.84:8080/vstream-video-service";
+const BASE_URL = "http://localhost:8080/vstream-video-service";
 // const BASE_URL = "http://10.42.0.225:8001/vstream_gateway";
 
 export const getHlsUrl = (uploaderId, videoId) =>
@@ -24,11 +24,16 @@ export const getLikeVideoUrl = (videoId, userId) =>
 export const getViewVideoUrl = (videoId) =>
   `${BASE_URL}/videos/${videoId}/views`;
 
+export const getUploadCountByUserUrl = () =>
+  `${BASE_URL}/videos/upload-count-by-user`;
+
 export const getVideoUploadTrendUrl = (period) =>
   `${BASE_URL}/videos/video-upload-trends?period=${period}`;
 
-export const getUploadCountByUserUrl = () =>
-  `${BASE_URL}/videos/upload-count-by-user`;
+export const getThumbnailUrl = (videoId) =>
+  `${BASE_URL}/thumbnails/${videoId}`;
+
+// http://10.17.35.84:8080/vstream-video-service/thumbnails/${videoId}
 
 export const getViewVsLikes = (period) =>
   `${BASE_URL}/videos/views-vs-likes`;

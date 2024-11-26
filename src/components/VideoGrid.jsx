@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { Play, ThumbsUp, Eye } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
-import { getVideosUrl, getVideoByIdUrl } from "../http/VideoServiceUrls";
+import { getVideosUrl, getVideoByIdUrl, getThumbnailUrl } from "../http/VideoServiceUrls";
 
 var videos;
 
@@ -72,7 +72,7 @@ const VideoBox = ({ video }) => {
       className="bg-white rounded-xl shadow-md overflow-hidden cursor-pointer transform transition hover:scale-105 hover:shadow-lg"
     >
       <div className="relative">
-        <img src={`http://10.17.35.84:8080/vstream-video-service/thumbnails/${videoId}`} alt={title} className="w-full h-48 object-cover" />
+        <img src={getThumbnailUrl(videoId)} alt={title} className="w-full h-48 object-cover" />
         <div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
           <Play className="w-12 h-12 text-white" />
         </div>

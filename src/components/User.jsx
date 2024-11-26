@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { getUploadVideoUrl } from "../http/VideoServiceUrls";
 import { useNavigate } from "react-router-dom";
-import { getVideosUrlUserId, getVideoByIdUrl} from "../http/VideoServiceUrls";
+import { getVideosUrlUserId, getVideoByIdUrl, getThumbnailUrl } from "../http/VideoServiceUrls";
 
 export const getVideos = () => {
   return new Promise((resolve, reject) => {
@@ -362,7 +362,7 @@ const UserPage = () => {
           >
             <div className="relative aspect-video">
               <img
-                src={`http://10.17.35.84:8080/vstream-video-service/thumbnails/${video.videoId}`}
+                src={getThumbnailUrl(video.videoId)}
                 alt={video.title}
                 className="w-full h-full object-cover"
               />
@@ -374,7 +374,7 @@ const UserPage = () => {
               </div>
               <div className="absolute bottom-2 right-2 px-2 py-1 bg-black/80 text-white text-sm rounded-md flex items-center">
                 <Clock className="w-3 h-3 mr-1" />
-                {formatDuration(video.duration)}
+                {video.duration}
               </div>
               <div className="absolute top-2 right-2 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
